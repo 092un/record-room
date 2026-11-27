@@ -8,7 +8,13 @@ const BASE_RECORD_ANGLE = 84
 const CURSOR_ROTATION_RANGE = 5
 const SLOT_GAP = 6
 
-function AlbumRack({ tracks, navigationIndex, onActiveTrackChange }) {
+function AlbumRack({
+  tracks,
+  navigationIndex,
+  onActiveTrackChange,
+  onAlbumSelect,
+  isExiting,
+}) {
   const railRef = useRef(null)
   const positionRefs = useRef(new Map())
   const dragRef = useRef(null)
@@ -177,13 +183,52 @@ function AlbumRack({ tracks, navigationIndex, onActiveTrackChange }) {
       if (event.pointerType !== 'mouse') return
       cursorClientXRef.current = event.clientX
       schedulePositionUpdate(false)
+
+      const drag = dragRef.current
+      if (!drag || drag.pointerType !== 'mouse' || drag.pointerId !== event.pointerId) {
+        return
+      }
+
+      const distance = event.clientX - drag.startX
+      if (Math.abs(distance) > DRAG_THRESHOLD) drag.didDrag = true
+      if (!drag.didDrag) return
+
+      event.preventDefault()
+      const now = performance.now()
+      const elapsed = Math.max(now - drag.lastTime, 1)
+      const movement = drag.lastX - event.clientX
+
+      rail.scrollLeft = drag.startScroll - distance
+      velocityRef.current = movement / elapsed
+      drag.lastX = event.clientX
+      drag.lastTime = now
+    }
+
+    const finishWindowPointerGesture = (event) => {
+      const drag = dragRef.current
+      if (!drag || drag.pointerId !== event.pointerId) return
+
+      if (drag.didDrag) {
+        suppressClickRef.current = true
+        window.setTimeout(() => {
+          suppressClickRef.current = false
+        }, 300)
+      }
+
+      if (drag.pointerType === 'mouse') {
+        setIsDragging(false)
+        if (drag.didDrag) startInertia()
+      }
+      dragRef.current = null
     }
 
     rail.addEventListener('wheel', handleWheel, { passive: false })
     rail.addEventListener('scroll', handleScroll, { passive: true })
     window.addEventListener('pointermove', handleWindowPointerMove, {
-      passive: true,
+      passive: false,
     })
+    window.addEventListener('pointerup', finishWindowPointerGesture)
+    window.addEventListener('pointercancel', finishWindowPointerGesture)
     window.addEventListener('resize', handleResize)
     updateFixedLayout()
     updateAlbumPositions()
@@ -192,6 +237,8 @@ function AlbumRack({ tracks, navigationIndex, onActiveTrackChange }) {
       rail.removeEventListener('wheel', handleWheel)
       rail.removeEventListener('scroll', handleScroll)
       window.removeEventListener('pointermove', handleWindowPointerMove)
+      window.removeEventListener('pointerup', finishWindowPointerGesture)
+      window.removeEventListener('pointercancel', finishWindowPointerGesture)
       window.removeEventListener('resize', handleResize)
       stopInertia()
       if (scrollFrameRef.current) {
@@ -247,60 +294,17 @@ function AlbumRack({ tracks, navigationIndex, onActiveTrackChange }) {
       if (event.button !== 0) return
       stopInertia()
       setIsDragging(true)
-      event.currentTarget.setPointerCapture(event.pointerId)
     }
 
     dragRef.current = {
       pointerType: event.pointerType,
+      pointerId: event.pointerId,
       startX: event.clientX,
       startScroll: railRef.current.scrollLeft,
       lastX: event.clientX,
       lastTime: performance.now(),
       didDrag: false,
     }
-  }
-
-  const handlePointerMove = (event) => {
-    if (event.pointerType === 'mouse') {
-      cursorClientXRef.current = event.clientX
-      schedulePositionUpdate(false)
-    }
-
-    const drag = dragRef.current
-    if (!drag) return
-
-    const distance = event.clientX - drag.startX
-    if (Math.abs(distance) > DRAG_THRESHOLD) drag.didDrag = true
-
-    if (drag.pointerType === 'mouse' && drag.didDrag) {
-      event.preventDefault()
-      const now = performance.now()
-      const elapsed = Math.max(now - drag.lastTime, 1)
-      const movement = drag.lastX - event.clientX
-
-      railRef.current.scrollLeft = drag.startScroll - distance
-      velocityRef.current = movement / elapsed
-      drag.lastX = event.clientX
-      drag.lastTime = now
-    }
-  }
-
-  const finishPointerGesture = () => {
-    const drag = dragRef.current
-    if (!drag) return
-
-    if (drag.didDrag) {
-      suppressClickRef.current = true
-      window.setTimeout(() => {
-        suppressClickRef.current = false
-      }, 300)
-    }
-
-    if (drag.pointerType === 'mouse') {
-      setIsDragging(false)
-      if (drag.didDrag) startInertia()
-    }
-    dragRef.current = null
   }
 
   const handleClickCapture = (event) => {
@@ -310,13 +314,39 @@ function AlbumRack({ tracks, navigationIndex, onActiveTrackChange }) {
     suppressClickRef.current = false
   }
 
+  const activateAlbum = (track, index, element) => {
+    setActiveIndex(index)
+    if (!onAlbumSelect) return
+
+    const sleeve = element.querySelector('.album-sleeve')
+    const albumObject = element.querySelector('.album-object')
+    if (!sleeve || !albumObject) {
+      console.error(`Unable to animate album ${track.id}: album elements were not found.`)
+      return
+    }
+
+    const bounds = sleeve.getBoundingClientRect()
+    const originYaw =
+      Number.parseFloat(
+        window.getComputedStyle(albumObject).getPropertyValue('--record-yaw'),
+      ) || -BASE_RECORD_ANGLE
+
+    onAlbumSelect({
+      track,
+      originRect: {
+        left: bounds.left,
+        top: bounds.top,
+        width: bounds.width,
+        height: bounds.height,
+      },
+      originYaw,
+    })
+  }
+
   return (
     <div
-      className={`record-viewport${isDragging ? ' is-dragging' : ''}`}
+      className={`record-viewport${isDragging ? ' is-dragging' : ''}${isExiting ? ' is-exiting' : ''}`}
       onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={finishPointerGesture}
-      onPointerCancel={finishPointerGesture}
       onClickCapture={handleClickCapture}
     >
       <div
@@ -331,7 +361,8 @@ function AlbumRack({ tracks, navigationIndex, onActiveTrackChange }) {
             track={track}
             index={index}
             positionRef={setPositionRef}
-            onActivate={() => setActiveIndex(index)}
+            onActivate={(element) => activateAlbum(track, index, element)}
+            onFocus={() => setActiveIndex(index)}
           />
         ))}
       </div>

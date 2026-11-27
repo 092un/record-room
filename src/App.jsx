@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight, Disc3 } from 'lucide-react'
 import { motion, useReducedMotion } from 'motion/react'
 import AlbumRack from './components/AlbumRack'
+import ListeningRoom from './components/ListeningRoom'
 import { playlist } from './data/playlist'
 import './styles/App.css'
 
@@ -18,8 +19,33 @@ function updateGlassReflection(event) {
 function App() {
   const [activeTrack, setActiveTrack] = useState(playlist[0])
   const [navigationIndex, setNavigationIndex] = useState(null)
+  const [listeningSession, setListeningSession] = useState(null)
+  const [isReturningHome, setIsReturningHome] = useState(false)
+  const [volume, setVolume] = useState(0.8)
+  const [isMuted, setIsMuted] = useState(false)
+  const lastAudibleVolumeRef = useRef(0.8)
+  const listeningLockRef = useRef(false)
   const reduceMotion = useReducedMotion()
   const progress = (activeTrack.id / playlist.length) * 100
+
+  const startListening = ({ track, originRect, originYaw }) => {
+    if (listeningLockRef.current) return
+
+    listeningLockRef.current = true
+    setIsReturningHome(false)
+    setActiveTrack(track)
+    setListeningSession({ track, originRect, originYaw })
+  }
+
+  const revealCollection = () => {
+    setIsReturningHome(true)
+  }
+
+  const returnToCollection = () => {
+    setListeningSession(null)
+    setIsReturningHome(false)
+    listeningLockRef.current = false
+  }
 
   const navigateTrack = (direction) => {
     const index =
@@ -28,8 +54,24 @@ function App() {
     setNavigationIndex(index)
   }
 
+  const updateVolume = (nextVolume) => {
+    setVolume(nextVolume)
+    if (nextVolume > 0) lastAudibleVolumeRef.current = nextVolume
+  }
+
+  const toggleMute = () => {
+    if (isMuted) {
+      setIsMuted(false)
+      return
+    }
+    if (volume === 0) setVolume(lastAudibleVolumeRef.current)
+    setIsMuted(true)
+  }
+
   return (
-    <main className="record-room">
+    <main
+      className={`record-room${listeningSession ? ' is-listening' : ''}${isReturningHome ? ' is-returning-home' : ''}`}
+    >
       <header
         className="glass-panel masthead"
         onPointerMove={updateGlassReflection}
@@ -56,6 +98,8 @@ function App() {
           tracks={playlist}
           navigationIndex={navigationIndex}
           onActiveTrackChange={setActiveTrack}
+          onAlbumSelect={startListening}
+          isExiting={Boolean(listeningSession) && !isReturningHome}
         />
       </section>
 
@@ -109,6 +153,21 @@ function App() {
           </motion.button>
         </div>
       </footer>
+      {listeningSession && (
+        <ListeningRoom
+          key={listeningSession.track.id}
+          track={listeningSession.track}
+          originRect={listeningSession.originRect}
+          originYaw={listeningSession.originYaw}
+          onRevealCollection={revealCollection}
+          onBack={returnToCollection}
+          volume={volume}
+          isMuted={isMuted}
+          onVolumeChange={updateVolume}
+          onMutedChange={setIsMuted}
+          onToggleMute={toggleMute}
+        />
+      )}
     </main>
   )
 }

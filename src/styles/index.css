@@ -1,4 +1,11 @@
 :root {
+  --rr-pure-white: #ffffff;
+  --rr-snow-white: #f8f9fb;
+  --rr-frost-white: #eef0f3;
+  --rr-silver: #d4d8de;
+  --rr-titanium: #a8adb5;
+  --rr-graphite: #24262b;
+  --rr-secondary-ink: #737780;
   font-family:
     'Pretendard Variable',
     Pretendard,
@@ -6,8 +13,8 @@
     BlinkMacSystemFont,
     'Segoe UI',
     sans-serif;
-  color: #1d1d1f;
-  background: #f5f5f7;
+  color: var(--rr-graphite);
+  background: var(--rr-pure-white);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -49,11 +56,11 @@ button {
 }
 
 ::selection {
-  color: #1d1d1f;
-  background: #d7d7dc;
+  color: var(--rr-graphite);
+  background: var(--rr-silver);
 }
 
 :focus-visible {
-  outline: 2px solid rgba(29, 29, 31, 0.58);
+  outline: 2px solid rgba(36, 38, 43, 0.58);
   outline-offset: 3px;
 }

@@ -1,7 +1,7 @@
 .record-room {
-  --ink: #1d1d1f;
-  --secondary-ink: #86868b;
-  --glass-edge: rgba(255, 255, 255, 0.78);
+  --ink: var(--rr-graphite);
+  --secondary-ink: var(--rr-secondary-ink);
+  --glass-edge: rgba(255, 255, 255, 0.94);
 
   position: relative;
   isolation: isolate;
@@ -15,7 +15,7 @@
     clamp(18px, 2.8vw, 36px);
   overflow: hidden;
   color: var(--ink);
-  background: #f5f5f7;
+  background: var(--rr-pure-white);
 }
 
 .record-room::before,
@@ -25,6 +25,7 @@
   border-radius: 50%;
   content: '';
   pointer-events: none;
+  display: none;
 }
 
 .record-room::before {
@@ -34,11 +35,11 @@
   aspect-ratio: 1;
   background: radial-gradient(
     circle,
-    rgba(255, 255, 255, 0.82) 0%,
-    rgba(255, 255, 255, 0.32) 43%,
+    rgba(255, 255, 255, 0.96) 0%,
+    rgba(248, 249, 251, 0.32) 43%,
     transparent 73%
   );
-  filter: blur(26px);
+  filter: blur(24px);
 }
 
 .record-room::after {
@@ -48,36 +49,53 @@
   aspect-ratio: 1;
   background: radial-gradient(
     circle,
-    rgba(210, 218, 237, 0.24) 0%,
-    rgba(232, 234, 241, 0.12) 48%,
+    rgba(212, 216, 222, 0.12) 0%,
+    rgba(248, 249, 251, 0.18) 48%,
     transparent 72%
   );
-  filter: blur(34px);
+  filter: blur(32px);
+}
+
+.record-room.is-listening .masthead,
+.record-room.is-listening .listening-room,
+.record-room.is-listening .now-showing {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 380ms ease;
+}
+
+.record-room.is-returning-home .masthead,
+.record-room.is-returning-home .listening-room,
+.record-room.is-returning-home .now-showing {
+  opacity: 1;
+  pointer-events: auto;
+  transition: opacity 500ms ease;
 }
 
 .glass-panel {
   position: relative;
   isolation: isolate;
-  border: 1px solid var(--glass-edge);
-  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(115, 119, 128, 0.28);
+  background: rgba(255, 255, 255, 0.04);
   box-shadow:
-    0 12px 34px rgba(29, 29, 31, 0.075),
-    0 2px 6px rgba(29, 29, 31, 0.035),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96),
-    inset 0 -1px 0 rgba(116, 121, 134, 0.08);
+    0 20px 46px rgba(36, 38, 43, 0.055),
+    0 3px 9px rgba(36, 38, 43, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98),
+    inset 0 -1px 0 rgba(73, 78, 86, 0.17);
 }
 
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .glass-panel {
     background:
       linear-gradient(
-        145deg,
-        rgba(255, 255, 255, 0.65),
-        rgba(255, 255, 255, 0.33) 55%,
-        rgba(248, 249, 252, 0.44)
-      );
-    backdrop-filter: blur(25px) saturate(1.55);
-    -webkit-backdrop-filter: blur(25px) saturate(1.55);
+        138deg,
+        rgba(255, 255, 255, 0.22),
+        rgba(255, 255, 255, 0.055) 44%,
+        rgba(168, 173, 181, 0.045)
+      ),
+      rgba(255, 255, 255, 0.025);
+    backdrop-filter: blur(3px) saturate(1.06);
+    -webkit-backdrop-filter: blur(3px) saturate(1.06);
   }
 }
 
@@ -95,29 +113,50 @@
   background:
     radial-gradient(
       190px circle at var(--light-x, 50%) var(--light-y, 0%),
-      rgba(255, 255, 255, 0.82),
-      transparent 72%
+      rgba(255, 255, 255, 0.96),
+      transparent 68%
+    ),
+    linear-gradient(
+      132deg,
+      rgba(255, 255, 255, 0.78) 0%,
+      rgba(255, 255, 255, 0.24) 1.2%,
+      transparent 13% 84%,
+      rgba(73, 78, 86, 0.1) 100%
     ),
     linear-gradient(
       180deg,
-      rgba(255, 255, 255, 0.22),
-      transparent 48%,
-      rgba(255, 255, 255, 0.08)
+      rgba(255, 255, 255, 0.72),
+      transparent 12% 78%,
+      rgba(73, 78, 86, 0.12)
+    ),
+    linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.34),
+      transparent 1.5% 98.5%,
+      rgba(115, 119, 128, 0.075)
     );
-  opacity: 0.58;
-  transition: opacity 260ms ease;
+  opacity: 0.66;
+  transition: opacity 240ms ease;
 }
 
 .glass-panel::after {
   z-index: 2;
-  border: 1px solid rgba(255, 255, 255, 0.34);
+  border: 1px solid rgba(115, 119, 128, 0.24);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.58),
-    inset 0 -1px 0 rgba(120, 126, 141, 0.055);
+    inset 0 1px 0 rgba(255, 255, 255, 0.98),
+    inset 0 -1px 0 rgba(73, 78, 86, 0.16),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.72);
 }
 
 .glass-panel:hover::before {
-  opacity: 0.86;
+  opacity: 0.88;
+}
+
+.glass-panel:hover::after {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    inset 0 -1px 0 rgba(73, 78, 86, 0.2),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.84);
 }
 
 .glass-panel > * {
@@ -150,16 +189,24 @@
 }
 
 .brand-mark {
+  position: relative;
   display: grid;
   width: 39px;
   height: 39px;
   place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.82);
+  overflow: hidden;
+  border: 1px solid rgba(115, 119, 128, 0.25);
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.46);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0.055)),
+    rgba(255, 255, 255, 0.025);
   box-shadow:
-    0 2px 8px rgba(29, 29, 31, 0.045),
-    inset 0 1px 0 rgba(255, 255, 255, 0.92);
+    0 4px 11px rgba(36, 38, 43, 0.055),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98),
+    inset 0 -1px 0 rgba(73, 78, 86, 0.17),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.68);
+  backdrop-filter: blur(3px) saturate(1.06);
+  -webkit-backdrop-filter: blur(3px) saturate(1.06);
 }
 
 .collection-count {
@@ -219,8 +266,12 @@
   width: 34px;
   height: 34px;
   place-items: center;
-  border: 1px solid rgba(29, 29, 31, 0.08);
+  border: 1px solid rgba(115, 119, 128, 0.3);
   border-radius: 50%;
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    inset 0 -1px 0 rgba(73, 78, 86, 0.12);
   color: var(--secondary-ink);
   font-size: 11px;
   font-weight: 550;
@@ -266,14 +317,14 @@
   height: 3px;
   overflow: hidden;
   border-radius: 99px;
-  background: rgba(134, 134, 139, 0.18);
+  background: rgba(168, 173, 181, 0.24);
 }
 
 .track-progress span {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: rgba(29, 29, 31, 0.62);
+  background: rgba(36, 38, 43, 0.58);
   transition: width 420ms cubic-bezier(0.2, 0.72, 0.2, 1);
 }
 
@@ -291,29 +342,75 @@
 }
 
 .track-button {
+  position: relative;
+  isolation: isolate;
   display: grid;
   width: 37px;
   height: 37px;
   place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.84);
+  border: 1px solid rgba(115, 119, 128, 0.34);
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.42);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.055)),
+    rgba(255, 255, 255, 0.025);
   box-shadow:
-    0 2px 8px rgba(29, 29, 31, 0.045),
-    inset 0 1px 0 rgba(255, 255, 255, 0.94);
+    0 4px 12px rgba(36, 38, 43, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98),
+    inset 0 -1px 0 rgba(73, 78, 86, 0.19),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.68);
   color: var(--ink);
   transition:
     background-color 180ms ease,
-    box-shadow 180ms ease;
+    box-shadow 180ms ease,
+    border-color 180ms ease;
+  backdrop-filter: blur(3px) saturate(1.06);
+  -webkit-backdrop-filter: blur(3px) saturate(1.06);
+}
+
+.track-button::before {
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  background:
+    radial-gradient(130px circle at 28% 0%, rgba(255, 255, 255, 0.96), transparent 64%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.64), transparent 35% 78%, rgba(73, 78, 86, 0.12)),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.42), transparent 4% 96%, rgba(115, 119, 128, 0.1));
+  content: '';
+  opacity: 0.72;
+  pointer-events: none;
+  transition: opacity 180ms ease;
+}
+
+.track-button svg {
+  position: relative;
+  z-index: 1;
 }
 
 .track-button:hover {
-  background: rgba(255, 255, 255, 0.72);
-  box-shadow: 0 4px 12px rgba(29, 29, 31, 0.08);
+  border-color: rgba(168, 173, 181, 0.46);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.24)),
+    rgba(248, 249, 251, 0.18);
+  box-shadow:
+    0 6px 16px rgba(36, 38, 43, 0.09),
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    inset 0 -1px 0 rgba(115, 119, 128, 0.18);
+}
+
+.track-button:hover::before {
+  opacity: 1;
 }
 
 .track-button:active {
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(238, 240, 243, 0.48);
+  box-shadow:
+    0 1px 3px rgba(36, 38, 43, 0.04),
+    inset 0 2px 4px rgba(115, 119, 128, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.track-button:active::before {
+  opacity: 0.44;
 }
 
 @media (max-width: 760px) {

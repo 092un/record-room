@@ -17,6 +17,7 @@ function AlbumSleeve({
   index,
   positionRef,
   onActivate,
+  onFocus,
 }) {
   const reduceMotion = useReducedMotion()
   const [isHovered, setIsHovered] = useState(false)
@@ -26,18 +27,7 @@ function AlbumSleeve({
       ? imagePath
       : `${import.meta.env.BASE_URL}${imagePath.replace(/^\/+/, '')}`
     : null
-  const SleeveElement = track.artwork?.appleUrl ? motion.a : motion.button
-  const sleeveLinkProps = track.artwork?.appleUrl
-    ? {
-        href: track.artwork.appleUrl,
-        target: '_blank',
-        rel: 'noreferrer',
-        'aria-label': `${track.title} — ${track.artist}, Apple Music에서 열기`,
-      }
-    : {
-        type: 'button',
-        'aria-label': `${track.title} — ${track.artist} 선택`,
-      }
+  const SleeveElement = motion.button
   const cover = (
     <>
       {imageUrl ? (
@@ -69,8 +59,9 @@ function AlbumSleeve({
     >
       <SleeveElement
         className="album-hit-area"
-        {...sleeveLinkProps}
-        onClick={onActivate}
+        type="button"
+        aria-label={`${track.title} — ${track.artist} 선택`}
+        onClick={(event) => onActivate(event.currentTarget)}
         onMouseEnter={() => {
           setIsHovered(true)
         }}
@@ -78,7 +69,7 @@ function AlbumSleeve({
           setIsHovered(false)
         }}
         onPointerMove={updateSleeveReflection}
-        onFocus={onActivate}
+        onFocus={onFocus}
       >
         <motion.span
           className="album-sleeve"

@@ -35,6 +35,12 @@
 
 .record-position {
   cursor: grab;
+  transition: opacity 420ms ease;
+}
+
+.record-viewport.is-exiting .record-position {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .is-dragging .record-rail,
