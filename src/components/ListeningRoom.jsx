@@ -253,23 +253,23 @@ function ListeningRoom({
     if (syncTonearm) updateTonearmPosition(normalized)
   }
 
-  const handleAudioMetadata = () => {
+  const syncAudioMetadata = useCallback(() => {
     const audio = audioRef.current
-    const pendingProgress = pendingSeekRef.current
     if (
       !audio ||
-      pendingProgress === null ||
       !Number.isFinite(audio.duration) ||
       audio.duration <= 0
     ) {
       return
     }
 
+    setDuration(audio.duration)
+    const pendingProgress = pendingSeekRef.current
+    if (pendingProgress === null) return
     audio.currentTime = audio.duration * pendingProgress
     setCurrentTime(audio.currentTime)
-    setDuration(audio.duration)
     pendingSeekRef.current = null
-  }
+  }, [])
 
   const handleTonearmDragStart = () => {
     playAttemptRef.current += 1
@@ -307,8 +307,13 @@ function ListeningRoom({
   }
 
   const handleAudioEnded = () => {
+    const audio = audioRef.current
+    if (audio && Number.isFinite(audio.duration) && audio.duration > 0) {
+      setCurrentTime(audio.duration)
+    }
     setIsAudioPlaying(false)
-    setArmReturnRequested(true)
+    setIsManualSpinPaused(true)
+    setArmReturnRequested(false)
   }
 
   const stopAudioForReturn = useCallback(() => {
@@ -523,13 +528,8 @@ function ListeningRoom({
           hidden
           aria-hidden="true"
           tabIndex={-1}
-          onLoadedMetadata={handleAudioMetadata}
-          onDurationChange={() => {
-            const audio = audioRef.current
-            if (audio && Number.isFinite(audio.duration)) {
-              setDuration(audio.duration)
-            }
-          }}
+          onLoadedMetadata={syncAudioMetadata}
+          onDurationChange={syncAudioMetadata}
           onTimeUpdate={() => {
             const audio = audioRef.current
             if (audio) setCurrentTime(audio.currentTime)
