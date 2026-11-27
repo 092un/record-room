@@ -1,0 +1,264 @@
+.record-position {
+  --jacket-depth: 6px;
+
+  position: relative;
+  z-index: 1;
+  flex: 0 0 var(--slot-width, calc(var(--record-size) * 0.25));
+  width: var(--slot-width, calc(var(--record-size) * 0.25));
+  height: var(--record-size);
+  perspective: 1450px;
+  perspective-origin: 50% 50%;
+  transform-style: preserve-3d;
+}
+
+.album-hit-area {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transform-style: preserve-3d;
+  text-align: inherit;
+  text-decoration: none;
+  -webkit-user-drag: none;
+}
+
+.album-sleeve {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  display: block;
+  width: var(--record-size);
+  height: var(--record-size);
+  margin-left: calc(var(--record-size) / -2);
+  overflow: visible;
+  pointer-events: none;
+  transform-style: preserve-3d;
+}
+
+.album-object {
+  position: absolute;
+  inset: 0;
+  transform: rotateY(var(--record-yaw, -84deg));
+  transform-origin: 50% 50% 0;
+  transform-style: preserve-3d;
+}
+
+.album-face {
+  position: absolute;
+  width: var(--record-size);
+  height: var(--record-size);
+  overflow: hidden;
+  background: #e5e5ea;
+  backface-visibility: hidden;
+  pointer-events: none;
+  cursor: grab;
+}
+
+.album-face--front {
+  transform: translateZ(calc(var(--jacket-depth) / 2));
+  box-shadow:
+    0 0 0 1px rgba(29, 29, 31, 0.055),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+}
+
+.album-face--back {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.78), transparent 62%),
+    linear-gradient(90deg, #d6d7dc, #f1f1f3 12%, #e1e2e6 88%, #cfd0d5);
+  box-shadow: inset 0 0 0 1px rgba(29, 29, 31, 0.08);
+  transform: rotateY(180deg) translateZ(calc(var(--jacket-depth) / 2));
+}
+
+.album-side {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  background: linear-gradient(90deg, #bfc0c6, #e5e5ea 48%, #b4b6bd);
+  backface-visibility: hidden;
+  pointer-events: none;
+}
+
+.album-side--left,
+.album-side--right {
+  top: 0;
+  left: calc(50% - var(--jacket-depth) / 2);
+  width: var(--jacket-depth);
+  height: var(--record-size);
+}
+
+.album-side--right {
+  transform: rotateY(90deg) translateZ(calc(var(--record-size) / 2));
+}
+
+.album-side--left {
+  transform: rotateY(-90deg) translateZ(calc(var(--record-size) / 2));
+}
+
+.album-side--top,
+.album-side--bottom {
+  top: calc(50% - var(--jacket-depth) / 2);
+  left: 0;
+  width: var(--record-size);
+  height: var(--jacket-depth);
+  background: linear-gradient(180deg, #ececef, #b4b6bd);
+}
+
+.album-side--top {
+  transform: rotateX(90deg) translateZ(calc(var(--record-size) / 2));
+}
+
+.album-side--bottom {
+  transform: rotateX(-90deg) translateZ(calc(var(--record-size) / 2));
+}
+
+.album-cover-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.shrink-wrap,
+.sleeve-seams {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.shrink-wrap {
+  overflow: hidden;
+  background:
+    radial-gradient(
+      120% 90% at var(--reflection-x, 30%) var(--reflection-y, 0%),
+      rgba(255, 255, 255, 0.2),
+      transparent 42%
+    ),
+    linear-gradient(
+      112deg,
+      transparent 0 29%,
+      rgba(255, 255, 255, 0.035) 32%,
+      rgba(255, 255, 255, 0.3) 34%,
+      rgba(255, 255, 255, 0.055) 36%,
+      transparent 40% 100%
+    ),
+    linear-gradient(
+      68deg,
+      transparent 0 64%,
+      rgba(255, 255, 255, 0.17) 67%,
+      rgba(255, 255, 255, 0.025) 69%,
+      transparent 73% 100%
+    ),
+    linear-gradient(
+      172deg,
+      transparent 0 18%,
+      rgba(255, 255, 255, 0.095) 18.3%,
+      transparent 19.2% 100%
+    ),
+    linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.18),
+      transparent 5%,
+      transparent 94%,
+      rgba(255, 255, 255, 0.2)
+    );
+  opacity: 0.8;
+  transform: translateZ(0.5px);
+}
+
+.shrink-wrap::before,
+.shrink-wrap::after {
+  position: absolute;
+  content: '';
+  pointer-events: none;
+}
+
+.shrink-wrap::before {
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 0% 54%, rgba(255, 255, 255, 0.24), transparent 20%),
+    radial-gradient(ellipse at 100% 42%, rgba(255, 255, 255, 0.2), transparent 17%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16), transparent 9% 91%, rgba(29, 29, 31, 0.045));
+  opacity: 0.55;
+}
+
+.shrink-wrap::after {
+  top: 0;
+  bottom: 0;
+  left: var(--reflection-x, 30%);
+  width: 24%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+  filter: blur(7px);
+  opacity: 0.68;
+  transform: skewX(-10deg);
+  transition: left 180ms ease-out, top 180ms ease-out;
+}
+
+.sleeve-seams {
+  inset: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  border-right-color: rgba(255, 255, 255, 0.48);
+  border-bottom-color: rgba(29, 29, 31, 0.09);
+  transform: translateZ(1px);
+}
+
+.temporary-cover {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10%;
+  color: #55555a;
+  background:
+    radial-gradient(circle at 50% 52%, transparent 0 23%, rgba(29, 29, 31, 0.07) 23.3% 23.6%, transparent 24% 31%, rgba(29, 29, 31, 0.05) 31.3% 31.6%, transparent 32%),
+    linear-gradient(145deg, #f3f3f5, #d9d9df);
+  text-align: center;
+}
+
+.temporary-cover-kicker,
+.temporary-cover-label {
+  font-size: clamp(7px, 0.8vw, 10px);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+}
+
+.temporary-cover-title {
+  font-size: clamp(25px, 4vw, 46px);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 0.95;
+}
+
+.album-hit-area:focus-visible {
+  outline: 2px solid rgba(29, 29, 31, 0.7);
+  outline-offset: 6px;
+}
+
+.is-dragging .album-hit-area {
+  cursor: grabbing;
+}
+
+@media (max-width: 760px) {
+  .record-position {
+    --jacket-depth: 5px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shrink-wrap::after {
+    transition: none;
+  }
+}
