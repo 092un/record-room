@@ -16,6 +16,7 @@ const MIN_ANGLE = 100
 const MAX_ANGLE = 151
 const RECORD_OUTER_RADIUS = 205
 const RECORD_INNER_RADIUS = 74
+const REST_SNAP_ANGLE = MIN_ANGLE + 8
 const RPM_DEGREES_PER_SECOND = 200
 const SPIN_RESPONSE_MS = 440
 const RETURN_SPIN_DECEL_MS = 150
@@ -71,6 +72,8 @@ function Turntable({
   hasStartedPlayback,
   audioError,
   tonearmSeek,
+  isManualSpinPaused,
+  onTonearmRecordChange,
   onTonearmDragStart,
   onTonearmProgressChange,
   onTonearmRelease,
@@ -82,7 +85,9 @@ function Turntable({
   const frameRef = useRef(0)
   const onReturnReadyRef = useRef(onReturnReady)
   const onTonearmProgressChangeRef = useRef(onTonearmProgressChange)
+  const onTonearmRecordChangeRef = useRef(onTonearmRecordChange)
   const isAudioPlayingRef = useRef(isAudioPlaying)
+  const isManualSpinPausedRef = useRef(isManualSpinPaused)
   const stateRef = useRef({
     angle: INITIAL_ANGLE,
     targetAngle: INITIAL_ANGLE,
@@ -90,6 +95,7 @@ function Turntable({
     speed: 0,
     lastTime: 0,
     pointerId: null,
+    pointerAngleOffset: 0,
     onRecord: false,
     isReturning: false,
     isArmReturning: false,
@@ -108,6 +114,10 @@ function Turntable({
   useEffect(() => {
     onTonearmProgressChangeRef.current = onTonearmProgressChange
   }, [onTonearmProgressChange])
+
+  useEffect(() => {
+    onTonearmRecordChangeRef.current = onTonearmRecordChange
+  }, [onTonearmRecordChange])
 
   const animateFrame = useCallback(function updateTurntable(time) {
     frameRef.current = 0
@@ -180,11 +190,15 @@ function Turntable({
 
     if (state.onRecord !== wasOnRecord) {
       setIsOnRecord(state.onRecord)
+      onTonearmRecordChangeRef.current?.(state.onRecord)
     }
 
-    const shouldSpin = hasAudio
-      ? audioPlaying || (state.pointerId !== null && state.onRecord)
-      : state.onRecord
+    const shouldSpin =
+      audioPlaying ||
+      (state.onRecord &&
+        !isManualSpinPausedRef.current &&
+        !state.isReturning &&
+        !state.isArmReturning)
     const targetSpeed = shouldSpin ? RPM_DEGREES_PER_SECOND : 0
     const responseTime =
       state.isReturning && !state.onRecord
@@ -218,6 +232,10 @@ function Turntable({
         audioPlaying &&
         state.pointerId === null &&
         !state.isReturning &&
+        !state.isArmReturning) ||
+      (state.onRecord &&
+        !isManualSpinPausedRef.current &&
+        !state.isReturning &&
         !state.isArmReturning)
     state.lastTime = shouldContinue ? time : 0
     if (shouldContinue) {
@@ -233,8 +251,14 @@ function Turntable({
 
   useEffect(() => {
     isAudioPlayingRef.current = isAudioPlaying
-    if (isAudioPlaying) scheduleFrame()
-  }, [isAudioPlaying, scheduleFrame])
+    isManualSpinPausedRef.current = isManualSpinPaused
+    if (
+      isAudioPlaying ||
+      (stateRef.current.onRecord && !isManualSpinPaused)
+    ) {
+      scheduleFrame()
+    }
+  }, [isAudioPlaying, isManualSpinPaused, scheduleFrame])
 
   useEffect(() => {
     const state = stateRef.current
@@ -322,7 +346,7 @@ function Turntable({
     }
   }, [])
 
-  const getPointerAngle = (event) => {
+  const getPointerAngle = (event, offset = 0) => {
     const svg =
       event.currentTarget.tagName.toLowerCase() === 'svg'
         ? event.currentTarget
@@ -332,7 +356,7 @@ function Turntable({
     const y = ((event.clientY - bounds.top) / bounds.height) * 600
     const angle =
       (Math.atan2(y - PIVOT_Y, x - PIVOT_X) * 180) / Math.PI
-    return Math.max(MIN_ANGLE, Math.min(MAX_ANGLE, angle))
+    return Math.max(MIN_ANGLE, Math.min(MAX_ANGLE, angle + offset))
   }
 
   const handlePointerDown = (event) => {
@@ -354,7 +378,10 @@ function Turntable({
     event.currentTarget.setPointerCapture(event.pointerId)
     stateRef.current.pointerId = event.pointerId
     stateRef.current.lastReportedProgress = null
-    stateRef.current.targetAngle = getPointerAngle(event)
+    const pointerAngle = getPointerAngle(event)
+    stateRef.current.pointerAngleOffset =
+      stateRef.current.angle - pointerAngle
+    stateRef.current.targetAngle = stateRef.current.angle
     armRef.current?.classList.add('is-held')
     setIsDragging(true)
     scheduleFrame()
@@ -363,7 +390,10 @@ function Turntable({
   const handlePointerMove = (event) => {
     if (stateRef.current.pointerId !== event.pointerId) return
     event.preventDefault()
-    stateRef.current.targetAngle = getPointerAngle(event)
+    stateRef.current.targetAngle = getPointerAngle(
+      event,
+      stateRef.current.pointerAngleOffset,
+    )
     scheduleFrame()
   }
 
@@ -371,6 +401,9 @@ function Turntable({
     if (stateRef.current.pointerId !== event.pointerId) return
     const angle = stateRef.current.targetAngle
     const distance = getNeedleDistance(angle)
+    if (angle <= REST_SNAP_ANGLE) {
+      stateRef.current.targetAngle = MIN_ANGLE
+    }
     stateRef.current.pointerId = null
     armRef.current?.classList.remove('is-held')
     setIsDragging(false)

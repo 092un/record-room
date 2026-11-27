@@ -60,6 +60,8 @@ function ListeningRoom({
   const [returnRequested, setReturnRequested] = useState(false)
   const [recordRotation, setRecordRotation] = useState(0)
   const [isAudioPlaying, setIsAudioPlaying] = useState(false)
+  const [isTonearmOnRecord, setIsTonearmOnRecord] = useState(false)
+  const [isManualSpinPaused, setIsManualSpinPaused] = useState(false)
   const [hasStartedPlayback, setHasStartedPlayback] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
@@ -72,6 +74,8 @@ function ListeningRoom({
   const artworkUrl = getArtworkUrl(track)
   const audioUrl = getAudioUrl(track)
   const albumTitle = track.artwork?.albumTitle || track.title
+  const isManualSpinActive =
+    isTonearmOnRecord && !isManualSpinPaused
   const shortTransition = reduceMotion ? 0.38 : 1.08
   const returnLiftTransition = reduceMotion ? 0.12 : 0.22
   const returnMoveTransition = reduceMotion ? 0.35 : 0.9
@@ -208,15 +212,22 @@ function ListeningRoom({
 
   const togglePlayback = () => {
     const audio = audioRef.current
-    if (!audio) return
+    if (!audio) {
+      if (isTonearmOnRecord) {
+        setIsManualSpinPaused(isManualSpinActive)
+      }
+      return
+    }
 
-    if (!audio.paused) {
+    if (!audio.paused || isManualSpinActive) {
       playAttemptRef.current += 1
       pendingSeekRef.current = null
+      setIsManualSpinPaused(true)
       audio.pause()
       return
     }
 
+    setIsManualSpinPaused(false)
     setArmReturnRequested(false)
     const attempt = ++playAttemptRef.current
     setAudioError(false)
@@ -232,14 +243,14 @@ function ListeningRoom({
     }
   }
 
-  const seekToProgress = (progress) => {
+  const seekToProgress = (progress, syncTonearm = true) => {
     const normalized = Math.max(0, Math.min(1, progress))
     const audio = audioRef.current
     if (audio && Number.isFinite(audio.duration) && audio.duration > 0) {
       audio.currentTime = audio.duration * normalized
       setCurrentTime(audio.currentTime)
     }
-    updateTonearmPosition(normalized)
+    if (syncTonearm) updateTonearmPosition(normalized)
   }
 
   const handleAudioMetadata = () => {
@@ -263,6 +274,7 @@ function ListeningRoom({
   const handleTonearmDragStart = () => {
     playAttemptRef.current += 1
     setArmReturnRequested(false)
+    setIsManualSpinPaused(false)
     pendingSeekRef.current = null
     if (audioRef.current && Number.isFinite(audioRef.current.duration)) {
       setCurrentTime(audioRef.current.currentTime)
@@ -283,9 +295,15 @@ function ListeningRoom({
   }
 
   const handleTonearmRelease = ({ onRecord, progress }) => {
+    if (!onRecord) {
+      seekToProgress(progress, false)
+      audioRef.current?.pause()
+      return
+    }
+
+    setIsManualSpinPaused(false)
     seekToProgress(progress)
-    if (onRecord && audioUrl) playFromProgress(progress)
-    else audioRef.current?.pause()
+    if (audioUrl) playFromProgress(progress)
   }
 
   const handleAudioEnded = () => {
@@ -295,6 +313,7 @@ function ListeningRoom({
 
   const stopAudioForReturn = useCallback(() => {
     const audio = audioRef.current
+    setIsManualSpinPaused(true)
     playAttemptRef.current += 1
     pendingSeekRef.current = null
     if (!audio) return
@@ -579,6 +598,8 @@ function ListeningRoom({
             hasStartedPlayback={hasStartedPlayback}
             audioError={audioError}
             tonearmSeek={tonearmSeek}
+            isManualSpinPaused={isManualSpinPaused}
+            onTonearmRecordChange={setIsTonearmOnRecord}
             onTonearmDragStart={handleTonearmDragStart}
             onTonearmProgressChange={handleTonearmProgressChange}
             onTonearmRelease={handleTonearmRelease}
@@ -626,11 +647,11 @@ function ListeningRoom({
         <button
           className="playback-icon-button playback-toggle"
           type="button"
-          aria-label={isAudioPlaying ? '일시 정지' : '재생'}
+          aria-label={isAudioPlaying || isManualSpinActive ? '일시 정지' : '재생'}
           onClick={togglePlayback}
-          disabled={!audioUrl || phase !== 'listening'}
+          disabled={(!audioUrl && !isTonearmOnRecord) || phase !== 'listening'}
         >
-          {isAudioPlaying
+          {isAudioPlaying || isManualSpinActive
             ? <Pause size={17} strokeWidth={1.8} />
             : <Play size={17} strokeWidth={1.8} />}
         </button>
